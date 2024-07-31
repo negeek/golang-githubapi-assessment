@@ -1,0 +1,2 @@
+# GitHub API Data Fetching and Service
+A service in Golang that fetches data from GitHub's public APIs to retrieve repository information and commits, save the data in a persistent store, and continuously monitor the repository for changes.
