@@ -2,11 +2,18 @@ package github
 
 import "errors"
 
-func (s *SetupData) Validate() error {
-	if s.Owner == "" {
-		return errors.New("owner is required")
+func (t *TopNCommitAuthorsRequestData) Validate() error {
+	if t.Repo == "" {
+		return errors.New("repo is required")
 	}
-	if s.Repo == "" {
+	if t.TopN == 0 {
+		return errors.New("top_n is required")
+	}
+	return nil
+}
+
+func (r *RepoCommitsRequestData) Validate() error {
+	if r.Repo == "" {
 		return errors.New("repo is required")
 	}
 	return nil

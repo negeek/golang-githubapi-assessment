@@ -11,32 +11,41 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
+
+	githubCrons "github.com/negeek/golang-githubapi-assessment/crons/v1/github"
 	"github.com/negeek/golang-githubapi-assessment/db"
 	"github.com/negeek/golang-githubapi-assessment/middlewares"
+	routes "github.com/negeek/golang-githubapi-assessment/routes/v1"
 )
 
-func main() {
+func loadEnv() {
 	environment := os.Getenv("ENVIRONMENT")
 	if environment == "dev" {
-		err := godotenv.Load(".env")
-		if err != nil {
-			log.Fatal("Error loading .env file")
+		if err := godotenv.Load(".env"); err != nil {
+			log.Fatal("error loading .env file: ", err)
 		}
 	}
+}
 
-	//custom servermutiplexer
+func setupDB() {
+	dbUrl := os.Getenv("DATABASE_URL")
+	log.Println("connecting to DB...")
+	if err := db.Connect(dbUrl); err != nil {
+		log.Fatal("failed to connect to DB: ", err)
+	}
+	log.Println("connected to DB")
+}
+
+func setupRouter() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(middlewares.CORS)
+	routes.V1routes(router.StrictSlash(true))
+	return router
+}
 
-	// DB connection
-	dbUrl := os.Getenv("DATABASE_URL")
-	log.Println("connecting to db")
-	if err := db.Connect(dbUrl); err != nil {
-		log.Fatal(err)
-	}
-	log.Println("connected to db")
+func setupServer() *http.Server {
+	router := setupRouter()
 
-	//custom server
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      router,
@@ -45,30 +54,40 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// Run server in a goroutine so that it doesn't block.
 	go func() {
-		log.Println("start server")
-		if err := server.ListenAndServe(); err != nil {
-			log.Println(err)
+		log.Println("start server...")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Println("Server error: ", err)
 		}
 	}()
 
-	c := make(chan os.Signal, 1)
-	// accept graceful shutdowns when quit via SIGINT (Ctrl+C)
-	// SIGKILL will not be caught.
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	return server
+}
 
-	// Block until we receive our signal.
+func setupCronJobs() {
+	githubCrons.AddFunc("@hourly", githubCrons.CommitCron)
+	githubCrons.Start()
+}
+
+func main() {
+	loadEnv()
+	setupDB()
+	setupCronJobs()
+
+	server := setupServer()
+
+	// Handle graceful shutdown
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 
-	// Create a deadline to wait for.
+	log.Println("Shutting down...")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
-	// Doesn't block if no connections, but will otherwise wait
-	// until the timeout deadline.
-	server.Shutdown(ctx)
+	if err := server.Shutdown(ctx); err != nil {
+		log.Println("Server Shutdown Error: ", err)
+	}
 
-	log.Println("shutting down")
-	os.Exit(0)
-
+	log.Println("Server gracefully stopped")
 }

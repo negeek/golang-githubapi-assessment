@@ -1,10 +1,10 @@
 package github
 
-import "time"
+type TopNCommitAuthorsRequestData struct {
+	Repo string `json:"repo"`
+	TopN int    `json:"top_n"`
+}
 
-type SetupData struct {
-	Owner    string    `json:"owner"`
-	Repo     string    `json:"repo"`
-	FromDate time.Time `json:"from_date"`
-	ToDate   time.Time `json:"to_date"`
+type RepoCommitsRequestData struct {
+	Repo string `json:"repo"`
 }

@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	models "github.com/negeek/golang-githubapi-assessment/data/v1/github"
+	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
 	"github.com/negeek/golang-githubapi-assessment/utils"
 )
 
-func ParseCommitData(data []map[string]interface{}, repo string) ([]models.Commit, error) {
+func ParseCommitData(data []map[string]interface{}, repo string) ([]githubModels.Commit, error) {
 	var (
-		commits []models.Commit
+		commits []githubModels.Commit
 	)
 	for _, datum := range data {
 		commitData, ok := datum["commit"].(map[string]interface{})
@@ -64,7 +64,7 @@ func ParseCommitData(data []map[string]interface{}, repo string) ([]models.Commi
 			return nil, fmt.Errorf("invalid date format: %v", err)
 		}
 
-		commit := models.Commit{
+		commit := githubModels.Commit{
 			Repo:        repo,
 			SHA:         sha,
 			URL:         url,
@@ -78,7 +78,7 @@ func ParseCommitData(data []map[string]interface{}, repo string) ([]models.Commi
 	return commits, nil
 }
 
-func ParseRepoData(data map[string]interface{}, owner string) (*models.Repository, error) {
+func ParseRepoData(data map[string]interface{}, owner string) (*githubModels.Repository, error) {
 	name, ok := data["name"].(string)
 	if !ok {
 		return nil, errors.New("repo name missing or of incorrect type")
@@ -139,7 +139,7 @@ func ParseRepoData(data map[string]interface{}, owner string) (*models.Repositor
 		return nil, fmt.Errorf("invalid updated_at format: %v", err)
 	}
 
-	repo := &models.Repository{
+	repo := &githubModels.Repository{
 		Name:            name,
 		Description:     description,
 		URL:             url,
@@ -156,7 +156,7 @@ func ParseRepoData(data map[string]interface{}, owner string) (*models.Repositor
 
 }
 
-func FetchSaveCommits(config SetupData) {
+func FetchSaveCommits(config githubModels.SetupData) {
 	var (
 		url           string
 		urlWithParams string
@@ -165,7 +165,7 @@ func FetchSaveCommits(config SetupData) {
 		resp          *http.Response
 		data          []map[string]interface{}
 		respBody      []byte
-		commits       []models.Commit
+		commits       []githubModels.Commit
 		queryParams   = make(map[string]string)
 	)
 
@@ -204,7 +204,7 @@ func FetchSaveCommits(config SetupData) {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			log.Printf("Request failed with status code: %d\n", resp.StatusCode)
+			log.Printf("request failed with status code: %d\n", resp.StatusCode)
 			resp.Body.Close()
 			return
 		}
@@ -233,7 +233,7 @@ func FetchSaveCommits(config SetupData) {
 			return
 		}
 
-		err = models.CreateCommits(commits)
+		err = githubModels.CreateCommits(commits)
 		if err != nil {
 			log.Println(err)
 			return
@@ -245,7 +245,7 @@ func FetchSaveCommits(config SetupData) {
 	log.Printf("All commits saved for repo: %s\t and owner:%s", config.Repo, config.Owner)
 }
 
-func FetchSaveRepo(config SetupData) {
+func FetchSaveRepo(config githubModels.SetupData) {
 	var (
 		url      string
 		err      error
@@ -253,7 +253,7 @@ func FetchSaveRepo(config SetupData) {
 		resp     *http.Response
 		data     map[string]interface{}
 		respBody []byte
-		repo     = &models.Repository{}
+		repo     = &githubModels.Repository{}
 	)
 
 	url = fmt.Sprintf(RepoUrl, config.Owner, config.Repo)

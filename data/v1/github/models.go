@@ -28,3 +28,13 @@ type Commit struct {
 	Message     string     `json:"message"`
 	Date        time.Time  `json:"date"`
 }
+
+type SetupData struct {
+	ID        int       `json:"id"`
+	Owner     string    `json:"owner"`
+	Repo      string    `json:"repo"`
+	FromDate  time.Time `json:"from_date"`
+	ToDate    time.Time `json:"to_date"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
