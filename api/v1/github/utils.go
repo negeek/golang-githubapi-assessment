@@ -14,146 +14,78 @@ import (
 	"github.com/negeek/golang-githubapi-assessment/utils"
 )
 
-func ParseCommitData(data []map[string]interface{}, repo string) ([]githubModels.Commit, error) {
-	var (
-		commits []githubModels.Commit
-	)
+func ParseCommitData(data []map[string]interface{}, repo string) (commits []githubModels.Commit, err error) {
 	for _, datum := range data {
-		commitData, ok := datum["commit"].(map[string]interface{})
-		if !ok {
-			return nil, errors.New("commit data missing or of incorrect type")
-		}
+		func() {
+			defer func() {
+				if r := recover(); r != nil {
+					log.Printf("panic occurred: %v", r)
+				}
+			}()
 
-		sha, ok := commitData["sha"].(string)
-		if !ok {
-			return nil, errors.New("commit sha missing or of incorrect type")
-		}
+			commitData := datum["commit"].(map[string]interface{})
+			sha := commitData["sha"].(string)
+			url := commitData["url"].(string)
 
-		url, ok := commitData["url"].(string)
-		if !ok {
-			return nil, errors.New("commit url missing or of incorrect type")
-		}
+			authorData := commitData["author"].(map[string]interface{})
+			authorName := authorData["name"].(string)
+			authorEmail := authorData["email"].(string)
+			message := commitData["message"].(string)
+			dateStr := authorData["date"].(string)
 
-		authorData, ok := commitData["author"].(map[string]interface{})
-		if !ok {
-			return nil, errors.New("author data missing or of incorrect type")
-		}
+			date, err := time.Parse(time.RFC3339, dateStr)
+			if err != nil {
+				log.Printf("invalid date format: %v", err)
+				return
+			}
 
-		authorName, ok := authorData["name"].(string)
-		if !ok {
-			return nil, errors.New("author name missing or of incorrect type")
-		}
-
-		authorEmail, ok := authorData["email"].(string)
-		if !ok {
-			return nil, errors.New("author email missing or of incorrect type")
-		}
-
-		message, ok := commitData["message"].(string)
-		if !ok {
-			return nil, errors.New("commit message missing or of incorrect type")
-		}
-
-		dateStr, ok := authorData["date"].(string)
-		if !ok {
-			return nil, errors.New("author date missing or of incorrect type")
-		}
-
-		date, err := time.Parse(time.RFC3339, dateStr)
-		if err != nil {
-			return nil, fmt.Errorf("invalid date format: %v", err)
-		}
-
-		commit := githubModels.Commit{
-			Repo:        repo,
-			SHA:         sha,
-			URL:         url,
-			AuthorName:  authorName,
-			AuthorEmail: authorEmail,
-			Message:     message,
-			Date:        date,
-		}
-		commits = append(commits, commit)
+			commit := githubModels.Commit{
+				Repo:        repo,
+				SHA:         sha,
+				URL:         url,
+				AuthorName:  authorName,
+				AuthorEmail: authorEmail,
+				Message:     message,
+				Date:        date,
+			}
+			commits = append(commits, commit)
+		}()
 	}
+
 	return commits, nil
 }
 
-func ParseRepoData(data map[string]interface{}, owner string) (*githubModels.Repository, error) {
-	name, ok := data["name"].(string)
-	if !ok {
-		return nil, errors.New("repo name missing or of incorrect type")
-	}
+func ParseRepoData(data map[string]interface{}, owner string) (repo *githubModels.Repository, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("panic occurred: %v", r)
+		}
+	}()
 
-	description, ok := data["description"].(string)
-	if !ok {
-		return nil, errors.New("repo description missing or of incorrect type")
-	}
-
-	url, ok := data["url"].(string)
-	if !ok {
-		return nil, errors.New("repo url missing or of incorrect type")
-	}
-
-	language, ok := data["language"].(string)
-	if !ok {
-		return nil, errors.New("repo language missing or of incorrect type")
-	}
-
-	forks_count, ok := data["forks_count"].(int)
-	if !ok {
-		return nil, errors.New("repo forks_count missing or of incorrect type")
-	}
-
-	stars_count, ok := data["stars_count"].(int)
-	if !ok {
-		return nil, errors.New("repo stars_count missing or of incorrect type")
-	}
-
-	open_issues_count, ok := data["open_issues_count"].(int)
-	if !ok {
-		return nil, errors.New("repo open_issues_count missing or of incorrect type")
-	}
-
-	watchers_count, ok := data["watchers_count"].(int)
-	if !ok {
-		return nil, errors.New("repo watchers_count missing or of incorrect type")
-	}
-
-	created_at_str, ok := data["created_at"].(string)
-	if !ok {
-		return nil, errors.New("repo created_at missing or of incorrect type")
-	}
-
-	created_at, err := time.Parse(time.RFC3339, created_at_str)
+	createdAt, err := time.Parse(time.RFC3339, data["created_at"].(string))
 	if err != nil {
-		return nil, fmt.Errorf("invalid created_at format: %v", err)
+		return nil, errors.New("invalid created_at format")
 	}
 
-	updated_at_str, ok := data["updated_at"].(string)
-	if !ok {
-		return nil, errors.New("repo updated_at missing or of incorrect type")
-	}
-
-	updated_at, err := time.Parse(time.RFC3339, updated_at_str)
+	updatedAt, err := time.Parse(time.RFC3339, data["updated_at"].(string))
 	if err != nil {
-		return nil, fmt.Errorf("invalid updated_at format: %v", err)
+		return nil, errors.New("invalid updated_at format")
 	}
 
-	repo := &githubModels.Repository{
-		Name:            name,
-		Description:     description,
-		URL:             url,
-		Language:        language,
-		ForksCount:      forks_count,
-		StarsCount:      stars_count,
-		OpenIssuesCount: open_issues_count,
-		WatchersCount:   watchers_count,
-		CreatedAt:       created_at,
-		UpdatedAt:       updated_at,
+	repo = &githubModels.Repository{
+		Name:            data["name"].(string),
+		Description:     data["description"].(string),
+		URL:             data["url"].(string),
+		Language:        data["language"].(string),
+		ForksCount:      data["forks_count"].(int),
+		StarsCount:      data["stars_count"].(int),
+		OpenIssuesCount: data["open_issues_count"].(int),
+		WatchersCount:   data["watchers_count"].(int),
+		CreatedAt:       createdAt,
+		UpdatedAt:       updatedAt,
 	}
 
 	return repo, nil
-
 }
 
 func FetchSaveCommits(config githubModels.SetupData) {
@@ -169,7 +101,6 @@ func FetchSaveCommits(config githubModels.SetupData) {
 		queryParams   = make(map[string]string)
 	)
 
-	queryParams["page"] = "1"
 	queryParams["per_page"] = strconv.Itoa(PerPage)
 	if !config.FromDate.IsZero() {
 		queryParams["since"] = config.FromDate.Format(time.RFC3339)
@@ -183,16 +114,17 @@ func FetchSaveCommits(config githubModels.SetupData) {
 
 	for {
 		// Add query parameters to URL
+		queryParams["page"] = strconv.Itoa(page)
 		urlWithParams, err = utils.AddQueryParams(url, queryParams)
 		if err != nil {
 			log.Println(err)
-			return
+			break
 		}
 
 		req, err = http.NewRequest("GET", urlWithParams, nil)
 		if err != nil {
 			log.Println(err)
-			return
+			break
 		}
 		req.Header.Set("Accept", "application/vnd.github+json")
 
@@ -200,19 +132,19 @@ func FetchSaveCommits(config githubModels.SetupData) {
 		resp, err = client.Do(req)
 		if err != nil {
 			log.Println(err)
-			return
+			break
 		}
 
 		if resp.StatusCode != http.StatusOK {
 			log.Printf("request failed with status code: %d\n", resp.StatusCode)
 			resp.Body.Close()
-			return
+			break
 		}
 
 		respBody, err = io.ReadAll(resp.Body)
 		if err != nil {
 			log.Println(err)
-			return
+			break
 		}
 
 		resp.Body.Close()
@@ -220,7 +152,7 @@ func FetchSaveCommits(config githubModels.SetupData) {
 		err = json.Unmarshal(respBody, &data)
 		if err != nil {
 			log.Println(err)
-			return
+			break
 		}
 
 		if len(data) == 0 {
@@ -230,22 +162,17 @@ func FetchSaveCommits(config githubModels.SetupData) {
 		commits, err = ParseCommitData(data, config.Repo)
 		if err != nil {
 			log.Println(err)
-			return
+			continue
 		}
 
-		err = githubModels.CreateCommits(commits)
-		if err != nil {
-			log.Println(err)
-			return
-		}
+		githubModels.CreateCommits(commits)
 
-		page += 1
-		queryParams["page"] = strconv.Itoa(page)
+		page++
 	}
 	log.Printf("All commits saved for repo: %s\t and owner:%s", config.Repo, config.Owner)
 }
 
-func FetchSaveRepo(config githubModels.SetupData) {
+func FetchSaveRepo(config githubModels.SetupData) error {
 	var (
 		url      string
 		err      error
@@ -260,7 +187,7 @@ func FetchSaveRepo(config githubModels.SetupData) {
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Println(err)
-		return
+		return errors.New("unable to initiate github request")
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
@@ -268,39 +195,41 @@ func FetchSaveRepo(config githubModels.SetupData) {
 	resp, err = client.Do(req)
 	if err != nil {
 		log.Println(err)
-		return
+		return errors.New("unable to make github request")
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Request failed with status code: %d\n", resp.StatusCode)
+		log.Printf("request failed with status code: %d\n", resp.StatusCode)
 		resp.Body.Close()
-		return
+		log.Println(err)
+		return errors.New("github request failed")
 	}
 
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		return
+		return errors.New("unable to process github repo response")
 	}
-
 	resp.Body.Close()
 
 	err = json.Unmarshal(respBody, &data)
 	if err != nil {
 		log.Println(err)
-		return
+		return errors.New("unable to parse json data")
 	}
 
 	repo, err = ParseRepoData(data, config.Owner)
 	if err != nil {
 		log.Println(err)
-		return
+		return err
 	}
 
 	err = repo.Create()
 	if err != nil {
 		log.Println(err)
-		return
+		return errors.New("error saving repo data")
 	}
+
+	return nil
 
 }

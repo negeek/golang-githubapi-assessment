@@ -13,28 +13,32 @@ func Setup(w http.ResponseWriter, r *http.Request) {
 		err         error
 	)
 
-	// read  request body
+	// read request data
 	err = utils.Unmarshall(r.Body, &requestData)
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusBadRequest, "error reading request data", nil)
 		return
 	}
 
-	// validate request body
+	// validate request data
 	err = requestData.Validate()
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	// start daemon processes
-	go func(data githubModels.SetupData) {
-		FetchSaveRepo(data)
-	}(requestData)
+	// validate request data with github
+	err = FetchSaveRepo(requestData)
+	if err != nil {
+		utils.JsonResponse(w, false, http.StatusBadRequest, err.Error(), nil)
+		return
+	}
 
-	go func(data githubModels.SetupData) {
-		FetchSaveCommits(data)
-	}(requestData)
+	// save request data
+	err = requestData.Create()
+	if err != nil {
+		utils.JsonResponse(w, false, http.StatusBadRequest, "error saving github setup data", nil)
+	}
 
 	utils.JsonResponse(w, true, http.StatusOK, "github setup started successfully", nil)
 }

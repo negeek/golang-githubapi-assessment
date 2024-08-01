@@ -13,6 +13,7 @@ import (
 	"github.com/joho/godotenv"
 
 	githubCrons "github.com/negeek/golang-githubapi-assessment/crons/v1/github"
+	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
 	"github.com/negeek/golang-githubapi-assessment/db"
 	"github.com/negeek/golang-githubapi-assessment/middlewares"
 	routes "github.com/negeek/golang-githubapi-assessment/routes/v1"
@@ -34,6 +35,10 @@ func setupDB() {
 		log.Fatal("failed to connect to DB: ", err)
 	}
 	log.Println("connected to DB")
+}
+
+func seedDB() {
+	githubModels.Set_default_setup_data()
 }
 
 func setupRouter() *mux.Router {
@@ -72,6 +77,7 @@ func setupCronJobs() {
 func main() {
 	loadEnv()
 	setupDB()
+	seedDB()
 	setupCronJobs()
 
 	server := setupServer()

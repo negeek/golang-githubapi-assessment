@@ -3,6 +3,8 @@ package github
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 	"time"
 
 	"github.com/negeek/golang-githubapi-assessment/db"
@@ -28,17 +30,16 @@ func (c *Commit) FindLatestRepoCommitByDate() error {
 	return nil
 }
 
-func CreateCommits(commits []Commit) error {
+func CreateCommits(commits []Commit) {
 	for _, c := range commits {
 		utils.Time(c, true)
 		query := "INSERT INTO commits (id, sha, repo, author_name, author_email, url, message, date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
 		_, err := db.PostgreSQLDB.Exec(context.Background(), query, c.ID, c.SHA, c.Repo, c.AuthorName, c.AuthorEmail, c.URL, c.Message, c.Date)
 		if err != nil {
-			return err
+			log.Println(err)
+			continue
 		}
 	}
-	return nil
-
 }
 
 func (r *Repository) Create() error {
@@ -91,6 +92,17 @@ func (s *SetupData) Create() error {
 		return err
 	}
 	return nil
+}
+
+func Set_default_setup_data() {
+	s := &SetupData{
+		Owner: os.Getenv("GITHUB_OWNER"),
+		Repo:  os.Getenv("GITHUB_REPO"),
+	}
+	err := s.Create() // will throw error if repo already exist
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func Get_all_setup_data() ([]SetupData, error) {
