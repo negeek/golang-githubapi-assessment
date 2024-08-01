@@ -20,6 +20,7 @@ import (
 )
 
 func loadEnv() {
+	log.Println(("load env"))
 	environment := os.Getenv("ENVIRONMENT")
 	if environment == "dev" {
 		if err := godotenv.Load(".env"); err != nil {
@@ -38,10 +39,12 @@ func setupDB() {
 }
 
 func seedDB() {
+	log.Println("seed db with data")
 	githubModels.Set_default_setup_data()
 }
 
 func setupRouter() *mux.Router {
+	log.Println("setup router")
 	router := mux.NewRouter()
 	router.Use(middlewares.CORS)
 	routes.V1routes(router.StrictSlash(true))
@@ -70,8 +73,9 @@ func setupServer() *http.Server {
 }
 
 func setupCronJobs() {
+	log.Println("setup cronjobs")
 	githubCrons.AddFunc("@hourly", githubCrons.CommitCron)
-	githubCrons.Start()
+	githubCrons.Start(githubCrons.CommitCron)
 }
 
 func main() {

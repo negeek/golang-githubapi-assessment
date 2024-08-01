@@ -9,10 +9,10 @@ type Repository struct {
 	Description     string    `json:"description"`
 	URL             string    `json:"url"`
 	Language        string    `json:"language"`
-	ForksCount      int       `json:"forks_count"`
-	StarsCount      int       `json:"stars_count"`
-	OpenIssuesCount int       `json:"open_issues_count"`
-	WatchersCount   int       `json:"watchers_count"`
+	ForksCount      float64   `json:"forks_count"`
+	StarsCount      float64   `json:"stars_count"`
+	OpenIssuesCount float64   `json:"open_issues_count"`
+	WatchersCount   float64   `json:"watchers_count"`
 	CreatedAt       time.Time `json:"created_at"`
 	UpdatedAt       time.Time `json:"updated_at"`
 }

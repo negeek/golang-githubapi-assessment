@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v4"
 	"github.com/negeek/golang-githubapi-assessment/db"
 	"github.com/negeek/golang-githubapi-assessment/utils"
 )
 
-func (c *Commit) FindLatestRepoCommitByDate() error {
+func (c *Commit) FindLatestRepoCommitByDate() (bool, error) {
 	query := `
 		SELECT id, sha, repo, author_name, author_email, url, message, date
 		FROM commits
@@ -24,17 +26,20 @@ func (c *Commit) FindLatestRepoCommitByDate() error {
 
 	err := row.Scan(&c.ID, &c.SHA, &c.Repo, &c.AuthorName, &c.AuthorEmail, &c.URL, &c.Message, &c.Date)
 	if err != nil {
-		return err
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+		return false, err
 	}
 
-	return nil
+	return true, nil
 }
 
 func CreateCommits(commits []Commit) {
 	for _, c := range commits {
-		utils.Time(c, true)
-		query := "INSERT INTO commits (id, sha, repo, author_name, author_email, url, message, date) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)"
-		_, err := db.PostgreSQLDB.Exec(context.Background(), query, c.ID, c.SHA, c.Repo, c.AuthorName, c.AuthorEmail, c.URL, c.Message, c.Date)
+		utils.Time(&c, true)
+		query := "INSERT INTO commits (sha, repo, author_name, author_email, url, message, date) VALUES ($1, $2, $3, $4, $5, $6, $7)"
+		_, err := db.PostgreSQLDB.Exec(context.Background(), query, c.SHA, c.Repo, c.AuthorName, c.AuthorEmail, c.URL, c.Message, c.Date)
 		if err != nil {
 			log.Println(err)
 			continue
@@ -46,7 +51,6 @@ func (r *Repository) Create() error {
 	utils.Time(r, true)
 	query := `
 		INSERT INTO repositories (
-			id, 
 			owner, 
 			name, 
 			description, 
@@ -59,13 +63,12 @@ func (r *Repository) Create() error {
 			created_at, 
 			updated_at
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11
 		)
 	`
 	_, err := db.PostgreSQLDB.Exec(
 		context.Background(),
 		query,
-		r.ID,
 		r.Owner,
 		r.Name,
 		r.Description,
@@ -84,10 +87,24 @@ func (r *Repository) Create() error {
 	return nil
 }
 
+func FindRepoByName(name string) (bool, error) {
+	var exists bool
+	query := "SELECT EXISTS (SELECT 1 FROM repositories WHERE name=$1)"
+	name = strings.ToLower(name)
+	err := db.PostgreSQLDB.QueryRow(context.Background(), query, name).Scan(&exists)
+	if err != nil {
+		if err == pgx.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return exists, nil
+}
+
 func (s *SetupData) Create() error {
 	utils.Time(s, true)
-	query := "INSERT INTO setup_data (id, owner, repo, from_date, to_date, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7)"
-	_, err := db.PostgreSQLDB.Exec(context.Background(), query, s.ID, s.Owner, s.Repo, s.FromDate, s.ToDate, s.CreatedAt, s.UpdatedAt)
+	query := "INSERT INTO setup_data (owner, repo, from_date, to_date, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)"
+	_, err := db.PostgreSQLDB.Exec(context.Background(), query, s.Owner, strings.ToLower(s.Repo), s.FromDate, s.ToDate, s.CreatedAt, s.UpdatedAt)
 	if err != nil {
 		return err
 	}
@@ -97,7 +114,7 @@ func (s *SetupData) Create() error {
 func Set_default_setup_data() {
 	s := &SetupData{
 		Owner: os.Getenv("GITHUB_OWNER"),
-		Repo:  os.Getenv("GITHUB_REPO"),
+		Repo:  strings.ToLower(os.Getenv("GITHUB_REPO")),
 	}
 	err := s.Create() // will throw error if repo already exist
 	if err != nil {
@@ -126,7 +143,6 @@ func Get_all_setup_data() ([]SetupData, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
-
 	return setupData, nil
 }
 
@@ -139,7 +155,7 @@ func GetTopNCommitAuthors(repo string, topN int) ([]map[string]interface{}, erro
 		ORDER BY commit_count DESC
 		LIMIT $2;
 	`
-
+	repo = strings.ToLower(repo)
 	rows, err := db.PostgreSQLDB.Query(context.Background(), query, repo, topN)
 	if err != nil {
 		return nil, err
@@ -180,7 +196,7 @@ func GetCommitsByRepoName(repo string) ([]map[string]interface{}, error) {
 		WHERE repo = $1
 		ORDER BY date DESC;
 	`
-
+	repo = strings.ToLower(repo)
 	rows, err := db.PostgreSQLDB.Query(context.Background(), query, repo)
 	if err != nil {
 		return nil, fmt.Errorf("error querying commits for repository %s: %w", repo, err)

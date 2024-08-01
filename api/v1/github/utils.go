@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
@@ -19,12 +20,12 @@ func ParseCommitData(data []map[string]interface{}, repo string) (commits []gith
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
-					log.Printf("panic occurred: %v", r)
+					err = fmt.Errorf("panic occurred: %v, data: %v", r, datum)
 				}
 			}()
 
 			commitData := datum["commit"].(map[string]interface{})
-			sha := commitData["sha"].(string)
+			sha := datum["sha"].(string)
 			url := commitData["url"].(string)
 
 			authorData := commitData["author"].(map[string]interface{})
@@ -40,7 +41,7 @@ func ParseCommitData(data []map[string]interface{}, repo string) (commits []gith
 			}
 
 			commit := githubModels.Commit{
-				Repo:        repo,
+				Repo:        strings.ToLower(repo),
 				SHA:         sha,
 				URL:         url,
 				AuthorName:  authorName,
@@ -58,7 +59,7 @@ func ParseCommitData(data []map[string]interface{}, repo string) (commits []gith
 func ParseRepoData(data map[string]interface{}, owner string) (repo *githubModels.Repository, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic occurred: %v", r)
+			err = fmt.Errorf("panic occurred: %v, data: %v", r, data)
 		}
 	}()
 
@@ -73,14 +74,14 @@ func ParseRepoData(data map[string]interface{}, owner string) (repo *githubModel
 	}
 
 	repo = &githubModels.Repository{
-		Name:            data["name"].(string),
+		Name:            strings.ToLower(data["name"].(string)),
 		Description:     data["description"].(string),
 		URL:             data["url"].(string),
 		Language:        data["language"].(string),
-		ForksCount:      data["forks_count"].(int),
-		StarsCount:      data["stars_count"].(int),
-		OpenIssuesCount: data["open_issues_count"].(int),
-		WatchersCount:   data["watchers_count"].(int),
+		ForksCount:      data["forks_count"].(float64),
+		StarsCount:      data["stargazers_count"].(float64),
+		OpenIssuesCount: data["open_issues_count"].(float64),
+		WatchersCount:   data["watchers_count"].(float64),
 		CreatedAt:       createdAt,
 		UpdatedAt:       updatedAt,
 	}
@@ -111,9 +112,11 @@ func FetchSaveCommits(config githubModels.SetupData) {
 
 	url = fmt.Sprintf(CommitUrl, config.Owner, config.Repo)
 	page := 1
-
+	log.Println("starting fetching of commits", queryParams)
 	for {
 		// Add query parameters to URL
+		log.Printf("page %s", strconv.Itoa(page))
+		log.Println("parse query params")
 		queryParams["page"] = strconv.Itoa(page)
 		urlWithParams, err = utils.AddQueryParams(url, queryParams)
 		if err != nil {
@@ -121,6 +124,7 @@ func FetchSaveCommits(config githubModels.SetupData) {
 			break
 		}
 
+		log.Println("initialize request", urlWithParams)
 		req, err = http.NewRequest("GET", urlWithParams, nil)
 		if err != nil {
 			log.Println(err)
@@ -128,6 +132,7 @@ func FetchSaveCommits(config githubModels.SetupData) {
 		}
 		req.Header.Set("Accept", "application/vnd.github+json")
 
+		log.Println("make request")
 		client := &http.Client{}
 		resp, err = client.Do(req)
 		if err != nil {
@@ -135,12 +140,14 @@ func FetchSaveCommits(config githubModels.SetupData) {
 			break
 		}
 
+		log.Println("check response status")
 		if resp.StatusCode != http.StatusOK {
 			log.Printf("request failed with status code: %d\n", resp.StatusCode)
 			resp.Body.Close()
 			break
 		}
 
+		log.Println("read response body")
 		respBody, err = io.ReadAll(resp.Body)
 		if err != nil {
 			log.Println(err)
@@ -149,22 +156,26 @@ func FetchSaveCommits(config githubModels.SetupData) {
 
 		resp.Body.Close()
 
+		log.Println("parse json response body")
 		err = json.Unmarshal(respBody, &data)
 		if err != nil {
 			log.Println(err)
 			break
 		}
 
+		log.Println("check data length", len(data))
 		if len(data) == 0 {
 			break
 		}
 
+		log.Println("parse data")
 		commits, err = ParseCommitData(data, config.Repo)
 		if err != nil {
 			log.Println(err)
-			continue
+			break
 		}
 
+		log.Println("save data")
 		githubModels.CreateCommits(commits)
 
 		page++
@@ -184,6 +195,7 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 	)
 
 	url = fmt.Sprintf(RepoUrl, config.Owner, config.Repo)
+	log.Println("starting fetching repo", url)
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Println(err)
@@ -191,6 +203,7 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 
+	log.Println("make request")
 	client := &http.Client{}
 	resp, err = client.Do(req)
 	if err != nil {
@@ -198,6 +211,7 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 		return errors.New("unable to make github request")
 	}
 
+	log.Println("checking status code")
 	if resp.StatusCode != http.StatusOK {
 		log.Printf("request failed with status code: %d\n", resp.StatusCode)
 		resp.Body.Close()
@@ -205,6 +219,7 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 		return errors.New("github request failed")
 	}
 
+	log.Println("reading response body")
 	respBody, err = io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
@@ -212,18 +227,21 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 	}
 	resp.Body.Close()
 
+	log.Println("parsing json response body")
 	err = json.Unmarshal(respBody, &data)
 	if err != nil {
 		log.Println(err)
 		return errors.New("unable to parse json data")
 	}
 
+	log.Println("parsing repo data")
 	repo, err = ParseRepoData(data, config.Owner)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
 
+	log.Println("saving repo data")
 	err = repo.Create()
 	if err != nil {
 		log.Println(err)
