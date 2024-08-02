@@ -84,7 +84,7 @@ To get the commits for a repository, make a `GET` request to:
   - `{repo}`: Repository name.
 
 
-## Testing 🚨
+## Testing
 
 Automated tests are available and can be executed with:
 
