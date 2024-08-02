@@ -6,7 +6,8 @@ help:
 	@echo "  run            - Run the application"
 	@echo "  create_table   - Create a new migration file"
 	@echo "  migrate_up     - Apply migrations"
-	@echo "  migrate_down   - Revert migrations"
+	@echo "  migrate_down   - Revert migrations"    
+	@echo "  test           - Run tests"
 
 install:
 	go mod tidy
