@@ -4,8 +4,7 @@ import "time"
 
 type Repository struct {
 	ID              int       `json:"id"`
-	Owner           string    `json:"owner"`
-	Name            string    `json:"name"`
+	Name            string    `json:"name"` // repo full name
 	Description     string    `json:"description"`
 	URL             string    `json:"url"`
 	Language        string    `json:"language"`
@@ -20,7 +19,7 @@ type Repository struct {
 type Commit struct {
 	ID          int        `json:"id"`
 	SHA         string     `json:"sha"`
-	Repo        string     `json:"repo"` // corresponds to the repo name
+	Repo        string     `json:"repo"` // corresponds to the repo full name
 	RepoInfo    Repository `json:"repo_info"`
 	AuthorName  string     `json:"author_name"`
 	AuthorEmail string     `json:"author_email"`
@@ -31,7 +30,6 @@ type Commit struct {
 
 type SetupData struct {
 	ID        int       `json:"id"`
-	Owner     string    `json:"owner"`
 	Repo      string    `json:"repo"`
 	FromDate  time.Time `json:"from_date"`
 	ToDate    time.Time `json:"to_date"`

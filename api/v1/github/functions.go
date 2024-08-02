@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
@@ -16,6 +15,9 @@ import (
 )
 
 func ParseCommitData(data []map[string]interface{}, repo string) (commits []githubModels.Commit, err error) {
+	/*
+		This function parses the json commit data response of github API into type Commit format.
+	*/
 	for _, datum := range data {
 		func() {
 			defer func() {
@@ -41,7 +43,7 @@ func ParseCommitData(data []map[string]interface{}, repo string) (commits []gith
 			}
 
 			commit := githubModels.Commit{
-				Repo:        strings.ToLower(repo),
+				Repo:        repo,
 				SHA:         sha,
 				URL:         url,
 				AuthorName:  authorName,
@@ -56,7 +58,10 @@ func ParseCommitData(data []map[string]interface{}, repo string) (commits []gith
 	return commits, nil
 }
 
-func ParseRepoData(data map[string]interface{}, owner string) (repo *githubModels.Repository, err error) {
+func ParseRepoData(data map[string]interface{}) (repo *githubModels.Repository, err error) {
+	/*
+		This function parses the json repo data response of github API into type Repository format.
+	*/
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("panic occurred: %v, data: %v", r, data)
@@ -74,7 +79,7 @@ func ParseRepoData(data map[string]interface{}, owner string) (repo *githubModel
 	}
 
 	repo = &githubModels.Repository{
-		Name:            strings.ToLower(data["name"].(string)),
+		Name:            data["full_name"].(string),
 		Description:     data["description"].(string),
 		URL:             data["url"].(string),
 		Language:        data["language"].(string),
@@ -90,6 +95,10 @@ func ParseRepoData(data map[string]interface{}, owner string) (repo *githubModel
 }
 
 func FetchSaveCommits(config githubModels.SetupData) {
+	/*
+		This function fetches the repo commits by making request to github and
+		then saving the result to db.
+	*/
 	var (
 		url           string
 		urlWithParams string
@@ -110,7 +119,7 @@ func FetchSaveCommits(config githubModels.SetupData) {
 		queryParams["until"] = config.ToDate.Format(time.RFC3339)
 	}
 
-	url = fmt.Sprintf(CommitUrl, config.Owner, config.Repo)
+	url = fmt.Sprintf(CommitUrl, config.Repo)
 	page := 1
 	log.Println("starting fetching of commits", queryParams)
 	for {
@@ -168,22 +177,26 @@ func FetchSaveCommits(config githubModels.SetupData) {
 			break
 		}
 
-		log.Println("parse data")
+		log.Println("parse commits data")
 		commits, err = ParseCommitData(data, config.Repo)
 		if err != nil {
 			log.Println(err)
 			break
 		}
 
-		log.Println("save data")
+		log.Println("save commits data")
 		githubModels.CreateCommits(commits)
 
 		page++
 	}
-	log.Printf("All commits saved for repo: %s\t and owner:%s", config.Repo, config.Owner)
+	log.Printf("All commits saved for repo: %s", config.Repo)
 }
 
 func FetchSaveRepo(config githubModels.SetupData) error {
+	/*
+		This function fetches the repo details by making request to github and
+		then saving the result to db.
+	*/
 	var (
 		url      string
 		err      error
@@ -194,7 +207,7 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 		repo     = &githubModels.Repository{}
 	)
 
-	url = fmt.Sprintf(RepoUrl, config.Owner, config.Repo)
+	url = fmt.Sprintf(RepoUrl, config.Repo)
 	log.Println("starting fetching repo", url)
 	req, err = http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -235,7 +248,7 @@ func FetchSaveRepo(config githubModels.SetupData) error {
 	}
 
 	log.Println("parsing repo data")
-	repo, err = ParseRepoData(data, config.Owner)
+	repo, err = ParseRepoData(data)
 	if err != nil {
 		log.Println(err)
 		return err

@@ -9,6 +9,11 @@ import (
 )
 
 func CommitCron() {
+	/*
+		This funtion gets all setup data from db which contains the repo name and owner name.
+		It uses this to fetch the commits of each repo. If repo doesn't exist in db,
+		it fetches repo detail before fetching commits
+	*/
 	log.Println("commit cron started")
 	var (
 		exist  bool
@@ -34,13 +39,13 @@ func CommitCron() {
 			continue
 		}
 		if exist {
+			log.Println("commit record for repo exist. Setting FromDate for fetching new commits")
 			setup.FromDate = commit.Date
 		} else {
-			log.Println("no commit record for repo exist")
+			log.Println("no commit record for repo exist.")
 			setup.FromDate = time.Time{}
 		}
 		setup.Repo = s.Repo
-		setup.Owner = s.Owner
 		setup.ToDate = time.Time{}
 
 		exist, err = githubModels.FindRepoByName(s.Repo)

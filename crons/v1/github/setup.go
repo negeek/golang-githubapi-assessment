@@ -9,6 +9,9 @@ import (
 var Cron = cron.New()
 
 func AddFunc(schedule string, job func()) {
+	/*
+		This function adds a job to the cron job runner
+	*/
 	log.Println("add new job")
 	_, err := Cron.AddFunc(schedule, job)
 	if err != nil {
@@ -17,13 +20,18 @@ func AddFunc(schedule string, job func()) {
 }
 
 func Start(immediateFuncs ...func()) {
-	// Start the cron scheduler in a separate goroutine
+	/*
+		This function starts the cron job runner.
+
+		Arguement:
+			immediateFuncs:  a list of functions to be run immediately this function is called
+							essence is to avoid waiting for cron job runner schedule time.
+	*/
 	go func() {
 		Cron.Start()
 		log.Println("Cron jobs started")
 	}()
 
-	// Run immediate functions
 	if len(immediateFuncs) > 0 {
 		for _, fn := range immediateFuncs {
 			log.Println("Running immediate function")

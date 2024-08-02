@@ -2,7 +2,9 @@ package github
 
 import (
 	"net/http"
+	"strconv"
 
+	"github.com/gorilla/mux"
 	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
 	"github.com/negeek/golang-githubapi-assessment/utils"
 )
@@ -45,26 +47,20 @@ func Setup(w http.ResponseWriter, r *http.Request) {
 
 func TopNCommitAuthors(w http.ResponseWriter, r *http.Request) {
 	var (
-		requestData  = TopNCommitAuthorsRequestData{}
+		repo         string
+		topN         int
 		err          error
 		responseData []map[string]interface{}
 	)
-
-	// read  request body
-	err = utils.Unmarshall(r.Body, &requestData)
+	pathVars := mux.Vars(r)
+	repo = pathVars["repo"]
+	topN, err = strconv.Atoi(pathVars["n"])
 	if err != nil {
-		utils.JsonResponse(w, false, http.StatusBadRequest, "error reading request data", nil)
+		utils.JsonResponse(w, false, http.StatusBadRequest, "error parsing top n", nil)
 		return
 	}
 
-	// validate request body
-	err = requestData.Validate()
-	if err != nil {
-		utils.JsonResponse(w, false, http.StatusBadRequest, err.Error(), nil)
-		return
-	}
-
-	responseData, err = githubModels.GetTopNCommitAuthors(requestData.Repo, requestData.TopN)
+	responseData, err = githubModels.GetTopNCommitAuthors(repo, topN)
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusInternalServerError, "error getting topN commit authors", nil)
 		return
@@ -76,26 +72,13 @@ func TopNCommitAuthors(w http.ResponseWriter, r *http.Request) {
 
 func RepoCommits(w http.ResponseWriter, r *http.Request) {
 	var (
-		requestData  = RepoCommitsRequestData{}
+		repo         string
 		err          error
 		responseData []map[string]interface{}
 	)
 
-	// read  request body
-	err = utils.Unmarshall(r.Body, &requestData)
-	if err != nil {
-		utils.JsonResponse(w, false, http.StatusBadRequest, "error reading request data", nil)
-		return
-	}
-
-	// validate request body
-	err = requestData.Validate()
-	if err != nil {
-		utils.JsonResponse(w, false, http.StatusBadRequest, err.Error(), nil)
-		return
-	}
-
-	responseData, err = githubModels.GetCommitsByRepoName(requestData.Repo)
+	repo = mux.Vars(r)["repo"]
+	responseData, err = githubModels.GetCommitsByRepoName(repo)
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusInternalServerError, "error getting repo commits", nil)
 		return

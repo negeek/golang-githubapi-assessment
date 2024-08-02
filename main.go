@@ -30,7 +30,7 @@ func loadEnv() {
 }
 
 func setupDB() {
-	dbUrl := os.Getenv("DATABASE_URL")
+	dbUrl := os.Getenv("POSTGRESQL_URL")
 	log.Println("connecting to DB...")
 	if err := db.Connect(dbUrl); err != nil {
 		log.Fatal("failed to connect to DB: ", err)
