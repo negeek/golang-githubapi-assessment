@@ -1,33 +1,19 @@
-.PHONY: install run create_table migrate_up migrate_down help
+POSTGRESQL_URL = postgres://postgresuser:postgrespass@db:5432/postgres?sslmode=disable
 
-help:
-	@echo "Available commands:"
-	@echo "  install        - Install dependencies"
-	@echo "  run            - Run the application"
-	@echo "  create_table   - Create a new migration file"
-	@echo "  migrate_up     - Apply migrations"
-	@echo "  migrate_down   - Revert migrations"    
-	@echo "  test           - Run tests"
-
-install:
-	go mod tidy
-	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+build:
+	docker compose build
 
 run:
-	go run main.go
+	docker compose up
 
 create_table:
-	@if [ -z "${MIGRATION_NAME}" ]; then \
-		echo "FILE_NAME is not set"; \
-		exit 1; \
-	fi
-	migrate create -ext sql -dir db/migrations -seq ${MIGRATION_NAME}
+	migrate create -ext sql -dir db/migrations -seq $(FILE_NAME)
 
 migrate_up:
-	migrate -database ${POSTGRESQL_URL} -path db/migrations up
+	docker compose run --rm app migrate -database ${POSTGRESQL_URL} -path db/migrations up
 
 migrate_down:
-	migrate -database ${POSTGRESQL_URL} -path db/migrations down
+	docker compose run --rm app migrate -database ${POSTGRESQL_URL} -path db/migrations down
 
 test:
-	go test ./...
+	docker compose run --rm app go test ./tests/v1 

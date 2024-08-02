@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	githubFuncs "github.com/negeek/golang-githubapi-assessment/api/v1/github"
 	"github.com/negeek/golang-githubapi-assessment/data/v1/github"
 )
 
@@ -38,7 +39,7 @@ var (
 )
 
 func TestParseCommitData(t *testing.T) {
-	commits, err := ParseCommitData(MockCommitData, "octocat/hello-world")
+	commits, err := githubFuncs.ParseCommitData(MockCommitData, "octocat/hello-world")
 	if err != nil {
 		t.Errorf("Error occurred: %v", err)
 	}
@@ -83,7 +84,7 @@ func TestParseCommitData(t *testing.T) {
 }
 
 func TestParseRepoData(t *testing.T) {
-	repo, err := ParseRepoData(MockRepoData)
+	repo, err := githubFuncs.ParseRepoData(MockRepoData)
 	if err != nil {
 		t.Errorf("Error occurred: %v", err)
 	}
