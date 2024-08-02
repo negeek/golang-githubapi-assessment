@@ -100,7 +100,6 @@ Automated tests are available and can be executed with:
 ## Discussion
 
 ### Approach and Assumptions
-- **Approach**:
   - Designed the schema with three key tables: `SetupData`, `Commits`, and `Repositories`.
   - Implemented unique constraints on the `repo` column in both `SetupData` and `Repositories` tables, and on the `sha` column in the `Commits` table to prevent duplicates.
   - Optimized query performance by indexing the `date`, `sha`, and `repo` columns in the `Commits` table, and the `repo` column in the `Repositories` table.
