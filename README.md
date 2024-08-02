@@ -4,7 +4,7 @@
 This service, written in Golang, interacts with GitHub's public APIs to fetch repository information and commits. It stores the data in a PostgreSQL database and continuously monitors the repositories for changes.
 
 ## Technologies Used
-- **Golang**: A high-level Python web framework that promotes rapid development and clean, pragmatic design.
+- **Golang**: Programming language.
 - **PostgreSQL**: An open-source object-relational database system.
 - **Golang-Migrate**: An open-source migration tool.
 - **Gorilla-Mux**: An open-source routing tool.
