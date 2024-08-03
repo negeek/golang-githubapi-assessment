@@ -3,6 +3,7 @@ package github
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
@@ -10,36 +11,48 @@ import (
 )
 
 func Setup(w http.ResponseWriter, r *http.Request) {
-	var (
-		requestData = githubModels.SetupData{}
-		err         error
-	)
-
-	// read request data
-	err = utils.Unmarshall(r.Body, &requestData)
+	rawData := make(map[string]string)
+	err := utils.Unmarshall(r.Body, &rawData)
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusBadRequest, "error reading request data", nil)
 		return
 	}
 
-	// validate request data
+	requestData := githubModels.SetupData{
+		Repo:     utils.ExtractStringField(rawData, "repo"),
+		FromDate: time.Time{}, // default value
+		ToDate:   time.Now(),  // default value
+	}
+
+	requestData.FromDate, err = utils.HandleDateField(rawData["from_date"], requestData.FromDate)
+	if err != nil {
+		utils.JsonResponse(w, false, http.StatusBadRequest, "invalid from_date format", nil)
+		return
+	}
+
+	requestData.ToDate, err = utils.HandleDateField(rawData["to_date"], requestData.ToDate)
+	if err != nil {
+		utils.JsonResponse(w, false, http.StatusBadRequest, "invalid to_date format", nil)
+		return
+	}
+
 	err = requestData.Validate()
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusBadRequest, err.Error(), nil)
 		return
 	}
 
-	// validate request data with github
-	err = FetchSaveRepo(requestData)
+	// make request to github to get repo metadata
+	err = RepoHandler(requestData)
 	if err != nil {
-		utils.JsonResponse(w, false, http.StatusBadRequest, err.Error(), nil)
+		utils.JsonResponse(w, false, http.StatusBadRequest, "error fetching and saving repo metadata", nil)
 		return
 	}
 
-	// save request data
 	err = requestData.Create()
 	if err != nil {
-		utils.JsonResponse(w, false, http.StatusBadRequest, "error saving github setup data", nil)
+		utils.JsonResponse(w, false, http.StatusBadRequest, "error saving setup data", nil)
+		return
 	}
 
 	utils.JsonResponse(w, true, http.StatusOK, "github setup started successfully", nil)

@@ -80,3 +80,24 @@ func AddQueryParams(baseUrl string, queryParams map[string]string) (string, erro
 
 	return u.String(), nil
 }
+
+func ConvertStringToTime(dateStr string) (time.Time, error) {
+	return time.Parse(time.RFC3339, dateStr)
+}
+
+// ExtractStringField extracts a string field from a map.
+func ExtractStringField(rawData map[string]string, key string) string {
+	return rawData[key]
+}
+
+// HandleDateField handles the conversion of date fields with default values if not provided.
+func HandleDateField(dateStr string, defaultValue time.Time) (time.Time, error) {
+	if dateStr == "" {
+		return defaultValue, nil
+	}
+	parsedDate, err := ConvertStringToTime(dateStr)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return parsedDate, nil
+}

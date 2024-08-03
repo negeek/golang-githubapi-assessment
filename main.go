@@ -12,11 +12,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 
+	githubFuncs "github.com/negeek/golang-githubapi-assessment/api/v1/github"
 	githubCrons "github.com/negeek/golang-githubapi-assessment/crons/v1/github"
 	githubModels "github.com/negeek/golang-githubapi-assessment/data/v1/github"
 	"github.com/negeek/golang-githubapi-assessment/db"
 	"github.com/negeek/golang-githubapi-assessment/middlewares"
 	routes "github.com/negeek/golang-githubapi-assessment/routes/v1"
+	runners "github.com/negeek/golang-githubapi-assessment/runners/v1/github"
 )
 
 func loadEnv() {
@@ -29,7 +31,7 @@ func loadEnv() {
 	}
 }
 
-func setupDB() {
+func connectDB() {
 	dbUrl := os.Getenv("POSTGRESQL_URL")
 	log.Println("connecting to DB...")
 	if err := db.Connect(dbUrl); err != nil {
@@ -40,7 +42,7 @@ func setupDB() {
 
 func seedDB() {
 	log.Println("seed db with data")
-	githubModels.Set_default_setup_data()
+	githubModels.SetEnvSetupData()
 }
 
 func setupRouter() *mux.Router {
@@ -51,7 +53,7 @@ func setupRouter() *mux.Router {
 	return router
 }
 
-func setupServer() *http.Server {
+func startServer() *http.Server {
 	router := setupRouter()
 
 	server := &http.Server{
@@ -72,19 +74,25 @@ func setupServer() *http.Server {
 	return server
 }
 
-func setupCronJobs() {
+func startGithubService() {
+	log.Println("start github api data fetching service")
+	runners.Run(1, githubFuncs.GithubHandler)
+}
+
+func startCronJobs() {
 	log.Println("setup cronjobs")
-	githubCrons.AddFunc("@hourly", githubCrons.CommitCron)
-	githubCrons.Start(githubCrons.CommitCron)
+	githubCrons.AddJob("@hourly", githubFuncs.GithubHandler)
+	githubCrons.StartCron()
 }
 
 func main() {
 	loadEnv()
-	setupDB()
+	connectDB()
 	seedDB()
-	setupCronJobs()
+	startGithubService()
+	startCronJobs()
 
-	server := setupServer()
+	server := startServer()
 
 	// Handle graceful shutdown
 	c := make(chan os.Signal, 1)

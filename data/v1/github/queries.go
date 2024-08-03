@@ -109,17 +109,41 @@ func (s *SetupData) Create() error {
 	return nil
 }
 
-func Set_default_setup_data() {
+func SetEnvSetupData() {
+	var err error
+
 	s := &SetupData{
-		Repo: os.Getenv("GITHUB_REPO"),
+		Repo:     os.Getenv("GITHUB_REPO"),
+		FromDate: time.Time{}, // default value
+		ToDate:   time.Now(),  // default value
 	}
-	err := s.Create() // will throw error if repo already exist
+
+	// Handle date fields
+	s.FromDate, err = utils.HandleDateField(os.Getenv("GITHUB_COMMIT_FROM_DATE"), s.FromDate)
+	if err != nil {
+		log.Printf("invalid date format: %v", err)
+		return
+	}
+
+	s.ToDate, err = utils.HandleDateField(os.Getenv("GITHUB_COMMIT_TO_DATE"), s.ToDate)
+	if err != nil {
+		log.Printf("invalid date format: %v", err)
+		return
+	}
+
+	err = s.Validate()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = s.Create() // will throw error if repo already exist
 	if err != nil {
 		log.Println(err)
 	}
 }
 
-func Get_all_setup_data() ([]SetupData, error) {
+func GetAllSetUpData() ([]SetupData, error) {
 	query := "SELECT id, repo, from_date, to_date, created_at, updated_at FROM setup_data"
 	rows, err := db.PostgreSQLDB.Query(context.Background(), query)
 	if err != nil {

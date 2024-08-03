@@ -14,6 +14,63 @@ import (
 	"github.com/negeek/golang-githubapi-assessment/utils"
 )
 
+func GithubHandler() {
+	/*
+		This funtion gets all setup data from db which contains the repo name and owner name.
+		It uses this to fetch the commits of each repo. If repo doesn't exist in db,
+		it fetches repo detail before fetching commits
+	*/
+	log.Println("repo commit manager started")
+	var (
+		exist  bool
+		setups = []githubModels.SetupData{}
+		err    error
+		commit = &githubModels.Commit{}
+		setup  = githubModels.SetupData{}
+	)
+
+	setups, err = githubModels.GetAllSetUpData()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Println("gotten all setup data")
+
+	for _, s := range setups {
+		commit.Repo = s.Repo
+		log.Printf("processing repo: %s", s.Repo)
+		exist, err = commit.FindLatestRepoCommitByDate()
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if exist {
+			log.Println("commit record for repo exist. Setting FromDate for fetching new commits")
+			setup.FromDate = commit.Date
+		} else {
+			log.Println("no commit record for repo exist.")
+			setup.FromDate = time.Time{}
+		}
+		setup.Repo = s.Repo
+		setup.ToDate = time.Time{}
+
+		exist, err = githubModels.FindRepoByName(s.Repo)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if !exist {
+			log.Println("repo does not exist in db. Fetching details")
+			err = RepoHandler(setup)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+		}
+		CommitHandler(setup)
+	}
+}
+
 func ParseCommitData(data []map[string]interface{}, repo string) (commits []githubModels.Commit, err error) {
 	/*
 		This function parses the json commit data response of github API into type Commit format.
@@ -94,7 +151,7 @@ func ParseRepoData(data map[string]interface{}) (repo *githubModels.Repository, 
 	return repo, nil
 }
 
-func FetchSaveCommits(config githubModels.SetupData) {
+func CommitHandler(config githubModels.SetupData) {
 	/*
 		This function fetches the repo commits by making request to github and
 		then saving the result to db.
@@ -192,7 +249,7 @@ func FetchSaveCommits(config githubModels.SetupData) {
 	log.Printf("All commits saved for repo: %s", config.Repo)
 }
 
-func FetchSaveRepo(config githubModels.SetupData) error {
+func RepoHandler(config githubModels.SetupData) error {
 	/*
 		This function fetches the repo details by making request to github and
 		then saving the result to db.
