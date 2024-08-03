@@ -99,10 +99,25 @@ func FindRepoByName(name string) (bool, error) {
 	return exists, nil
 }
 
-func (s *SetupData) Create() error {
+func (s *SetupData) CreateOrUpdate() error {
 	utils.Time(s, true)
-	query := "INSERT INTO setup_data (repo, from_date, to_date, created_at, updated_at) VALUES ($1, $2, $3, $4, $5)"
-	_, err := db.PostgreSQLDB.Exec(context.Background(), query, strings.ToLower(s.Repo), s.FromDate, s.ToDate, s.CreatedAt, s.UpdatedAt)
+	query := `
+		INSERT INTO setup_data (repo, from_date, to_date, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT (repo) 
+		DO UPDATE SET
+			from_date = EXCLUDED.from_date,
+			to_date = EXCLUDED.to_date,
+			created_at = EXCLUDED.created_at,
+			updated_at = EXCLUDED.updated_at
+	`
+	_, err := db.PostgreSQLDB.Exec(context.Background(), query,
+		strings.ToLower(s.Repo),
+		s.FromDate,
+		s.ToDate,
+		s.CreatedAt,
+		s.UpdatedAt,
+	)
 	if err != nil {
 		return err
 	}
@@ -137,7 +152,7 @@ func SetEnvSetupData() {
 		return
 	}
 
-	err = s.Create() // will throw error if repo already exist
+	err = s.CreateOrUpdate()
 	if err != nil {
 		log.Println(err)
 	}

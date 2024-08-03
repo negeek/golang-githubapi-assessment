@@ -49,7 +49,7 @@ func Setup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = requestData.Create()
+	err = requestData.CreateOrUpdate()
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusBadRequest, "error saving setup data", nil)
 		return

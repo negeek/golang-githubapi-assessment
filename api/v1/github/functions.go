@@ -46,7 +46,11 @@ func GithubHandler() {
 		}
 		if exist {
 			log.Println("commit record for repo exist. Setting FromDate for fetching new commits")
-			setup.FromDate = commit.Date
+			if !s.FromDate.IsZero() {
+				setup.FromDate = s.FromDate
+			} else {
+				setup.FromDate = commit.Date
+			}
 		} else {
 			log.Println("no commit record for repo exist.")
 			setup.FromDate = s.FromDate
