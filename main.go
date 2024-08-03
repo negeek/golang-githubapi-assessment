@@ -67,7 +67,7 @@ func startServer() *http.Server {
 	go func() {
 		log.Println("start server...")
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Println("Server error: ", err)
+			log.Println("server error: ", err)
 		}
 	}()
 
@@ -101,13 +101,13 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	<-c
 
-	log.Println("Shutting down...")
+	log.Println("shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Println("Server Shutdown Error: ", err)
+		log.Println("server shutdown error: ", err)
 	}
 
-	log.Println("Server gracefully stopped")
+	log.Println("server gracefully stopped")
 }

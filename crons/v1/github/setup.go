@@ -15,7 +15,7 @@ func AddJob(schedule string, job func()) {
 	log.Println("add new job")
 	_, err := Cron.AddFunc(schedule, job)
 	if err != nil {
-		log.Printf("Error adding cron job: %v", err)
+		log.Printf("error adding cron job: %v", err)
 	}
 }
 
@@ -25,7 +25,7 @@ func StartCron() {
 	*/
 	go func() {
 		Cron.Start()
-		log.Println("Cron jobs started")
+		log.Println("cron jobs started")
 	}()
 
 }

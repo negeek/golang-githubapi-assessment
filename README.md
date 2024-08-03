@@ -86,7 +86,6 @@ To get the commits for a repository, make a `GET` request to:
 - **URL:** `http://localhost:8080/api/v1/github/repo/{owner_name}/{repo_name}/commits/`
   - `{owner_name}`: Repository owner name.
   - `{repo_name}`: Repository name.
-  - `{repo}`: Repository name.
 
 
 ## Testing
