@@ -49,10 +49,10 @@ func GithubHandler() {
 			setup.FromDate = commit.Date
 		} else {
 			log.Println("no commit record for repo exist.")
-			setup.FromDate = time.Time{}
+			setup.FromDate = s.FromDate
 		}
 		setup.Repo = s.Repo
-		setup.ToDate = time.Time{}
+		setup.ToDate = s.ToDate
 
 		exist, err = githubModels.FindRepoByName(s.Repo)
 		if err != nil {
@@ -167,7 +167,7 @@ func CommitHandler(config githubModels.SetupData) {
 		commits       []githubModels.Commit
 		queryParams   = make(map[string]string)
 	)
-
+	log.Println("config setup", config)
 	queryParams["per_page"] = strconv.Itoa(PerPage)
 	if !config.FromDate.IsZero() {
 		queryParams["since"] = config.FromDate.Format(time.RFC3339)
