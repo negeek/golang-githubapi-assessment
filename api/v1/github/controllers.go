@@ -61,12 +61,16 @@ func Setup(w http.ResponseWriter, r *http.Request) {
 func TopNCommitAuthors(w http.ResponseWriter, r *http.Request) {
 	var (
 		repo         string
+		repo_name    string
+		owner_name   string
 		topN         int
 		err          error
 		responseData []map[string]interface{}
 	)
 	pathVars := mux.Vars(r)
-	repo = pathVars["repo"]
+	repo_name = pathVars["repo_name"]
+	owner_name = pathVars["owner_name"]
+	repo = owner_name + "/" + repo_name
 	topN, err = strconv.Atoi(pathVars["n"])
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusBadRequest, "error parsing top n", nil)
@@ -86,11 +90,16 @@ func TopNCommitAuthors(w http.ResponseWriter, r *http.Request) {
 func RepoCommits(w http.ResponseWriter, r *http.Request) {
 	var (
 		repo         string
+		repo_name    string
+		owner_name   string
 		err          error
 		responseData []map[string]interface{}
 	)
 
-	repo = mux.Vars(r)["repo"]
+	pathVars := mux.Vars(r)
+	repo_name = pathVars["repo_name"]
+	owner_name = pathVars["owner_name"]
+	repo = owner_name + "/" + repo_name
 	responseData, err = githubModels.GetCommitsByRepoName(repo)
 	if err != nil {
 		utils.JsonResponse(w, false, http.StatusInternalServerError, "error getting repo commits", nil)
