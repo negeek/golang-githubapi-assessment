@@ -36,6 +36,7 @@ This service, written in Golang, interacts with GitHub's public APIs to fetch re
      go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
      ```
    - Create and configure a `.env` file using `.env.example`.
+   - Export the below variables.
       ```bash
       export POSTGRESQL_URL="your postresql url in env"
       export ENVIRONMENT=dev
