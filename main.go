@@ -77,7 +77,6 @@ func startServer() *http.Server {
 func startServices() {
 	log.Println("start services")
 	go func() {
-		log.Println("start github api data fetching service")
 		runners.Run(1, githubFuncs.GithubHandler)
 	}()
 }
