@@ -72,15 +72,18 @@ To start fetching commits for a repository, make a `POST` request to the followi
 
 To retrieve the top N commit authors for a repository, make a `GET` request to:
 
-- **URL:** `http://localhost:8080/api/v1/github/repo/{repo}/top/{n}/commit-authors/`
-  - `{repo}`: Repository name.
+- **URL:** `http://localhost:8080/api/v1/github/repo/{owner_name}/{repo_name}/top/{n}/commit-authors/`
+  - `{owner_name}`: Repository owner name.
+  - `{repo_name}`: Repository name.
   - `{n}`: Number of top authors to retrieve.
 
 ### Get Repository Commits
 
 To get the commits for a repository, make a `GET` request to:
 
-- **URL:** `http://localhost:8080/api/v1/github/repo/{repo}/commits/`
+- **URL:** `http://localhost:8080/api/v1/github/repo/{owner_name}/{repo_name}/commits/`
+  - `{owner_name}`: Repository owner name.
+  - `{repo_name}`: Repository name.
   - `{repo}`: Repository name.
 
 
