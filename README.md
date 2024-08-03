@@ -107,8 +107,9 @@ Automated tests are available and can be executed with:
   - Implemented unique constraints on the `repo` column in both `SetupData` and `Repositories` tables, and on the `sha` column in the `Commits` table to prevent duplicates.
   - Optimized query performance by indexing the `date`, `sha`, and `repo` columns in the `Commits` table, and the `repo` column in the `Repositories` table.
   - Utilized the `SetupData` table to manage repositories under monitoring. Upon startup, the application is pre-configured to fetch commits from the Chromium repository by seeding this table.
-  - Set up a cron job to run hourly for monitoring purposes. Before fetching new commits, the cron job verifies the repository’s existence in the `Repositories` table. If absent, it retrieves metadata from GitHub and stores it in the `Repositories` table, followed by fetching the repository’s commits.
+  -Before fetching commits, repository existence is checked in the `Repositories` table. If absent, its metadata is retrieved from GitHub and stored in the `Repositories` table.
   - To prevent duplicate commit retrieval, the `sha` column in the `Commits` table is uniquely constrained. The latest commit date for each repository is queried and used as the `since` parameter in GitHub API requests, ensuring that only new commits are fetched.
+  - Set up a cron job to run hourly for monitoring purposes.
 
 ### Future Improvements
   - **Enhanced Test Coverage**: Develop more comprehensive test cases to ensure robustness.
