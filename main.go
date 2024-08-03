@@ -74,9 +74,10 @@ func startServer() *http.Server {
 	return server
 }
 
-func startGithubService() {
-	log.Println("start github api data fetching service")
+func startServices() {
+	log.Println("start services")
 	go func() {
+		log.Println("start github api data fetching service")
 		runners.Run(1, githubFuncs.GithubHandler)
 	}()
 }
@@ -91,7 +92,7 @@ func main() {
 	loadEnv()
 	connectDB()
 	seedDB()
-	startGithubService()
+	startServices()
 	startCronJobs()
 
 	server := startServer()

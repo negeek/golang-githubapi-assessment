@@ -20,7 +20,7 @@ func GithubHandler() {
 		It uses this to fetch the commits of each repo. If repo doesn't exist in db,
 		it fetches repo detail before fetching commits
 	*/
-	log.Println("repo commit manager started")
+	log.Println("github api data fetching service started")
 	var (
 		exist  bool
 		setups = []githubModels.SetupData{}
