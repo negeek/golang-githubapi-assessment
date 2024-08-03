@@ -38,6 +38,7 @@ This service, written in Golang, interacts with GitHub's public APIs to fetch re
    - Create and configure a `.env` file using `.env.example`.
       ```bash
       export POSTGRESQL_URL="your postresql url in env"
+      export ENVIRONMENT=dev
       ```
    - Run migrations:
      ```bash
@@ -47,7 +48,7 @@ This service, written in Golang, interacts with GitHub's public APIs to fetch re
      ```bash
      go run main.go
      ```
-   - Access the application at `http://localhost:8080`.
+4. Access the application at `http://localhost:8080`.
 
 ## API Endpoints
 
