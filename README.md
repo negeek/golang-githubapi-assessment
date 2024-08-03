@@ -113,8 +113,10 @@ Automated tests are available and can be executed with:
   - Set up a cron job to run hourly for monitoring purposes.
 
 ### Future Improvements
-  - **Enhanced Test Coverage**: Develop more comprehensive test cases to ensure robustness.
-  - **Improved Error Handling**: Implement more granular and informative error handling to aid troubleshooting.
-  - **Code Structure Optimization**: Refine the code structure for better maintainability and readability.
-  - **Asynchronous Commit Fetching**: Improve efficiency by fetching commits for multiple repositories concurrently, rather than sequentially processing one repository at a time.
+- **Enhanced Test Coverage**: Develop more comprehensive test cases to ensure robustness.
+- **Improved Error Handling**: Implement more granular and informative error handling to aid troubleshooting.
+- **Code Structure Optimization**: Refine the code structure for better maintainability and readability.
+- **Asynchronous Commit Fetching**: Increase efficiency by fetching commits for multiple repositories concurrently while adhering to GitHub's rate limit, instead of processing one repository at a time sequentially.
+- **Asynchronous Commit Saving**: Enhance efficiency by ensuring that saving commits does not block the fetching of paginated commits. This will also respect GitHub's rate limit and avoid exhausting the database connection pool.
+
 
